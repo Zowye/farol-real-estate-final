@@ -23,7 +23,6 @@ jobs:
             echo "GCP_SA_KEY is available but hidden for security reasons"
             fi
 
-
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -39,7 +38,7 @@ jobs:
       - name: Build & Push Docker image
         run: |
             IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate/real-estate-bff:${{ github.sha }}"
-            gcloud builds submit --tag $IMAGE .
+            gcloud builds submit --tag $IMAGE . --async
             echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
       - name: Deploy to Cloud Run

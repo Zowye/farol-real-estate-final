@@ -152,7 +152,7 @@ const { predictions, isLoading, getPlaceDetails } = usePlaces(searchInput)
 
 // Runtime config
 const config = useRuntimeConfig()
-const mapsApiKey = config.public.GOOGLE_MAPS_API_KEY
+const mapsApiKey = process.env.GOOGLE_MAPS_API_KEY
 
 // Keep v-model <-> parent in sync
 const address = computed({

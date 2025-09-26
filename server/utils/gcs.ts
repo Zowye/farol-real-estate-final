@@ -1,9 +1,11 @@
 // /server/utils/gcs.ts
 import { Storage, GetSignedUrlConfig } from '@google-cloud/storage'
 
-const storage = new Storage({
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS
-})
+const storage =
+  process.env.GOOGLE_APPLICATION_CREDENTIALS
+    ? new Storage({ keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS }) // local
+    : new Storage() // Cloud Run usa a service account atrelada ao serviço
+
 const bucketName = process.env.GOOGLE_CLOUD_BUCKET || ''
 const bucket = storage.bucket(bucketName)
 

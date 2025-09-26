@@ -513,7 +513,7 @@ const handleSubmit = async () => {
     navigateTo('/')
 
   } catch (error) {
-    console.error('❌ Error creating property flow:', error)
+    console.error('Error creating property flow:', error)
     alert('There was an error creating the property. Please try again.')
   } finally {
     isSubmitting.value = false

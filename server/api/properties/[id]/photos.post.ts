@@ -51,22 +51,19 @@ export default defineEventHandler(async (event) => {
     storagePath,
     makePublic: false
   })
-
-  const photo = await prisma.propertyPhoto.create({
-    data: {
-      propertyId,
-      storagePath: uploaded.storagePath,
-      contentType: uploaded.contentType,
-      isCover: cover
-    }
-  })
-
-  console.log('Photo uploaded & saved:', {
-    propertyId,
-    photoId: photo.id,
-    storagePath: uploaded.storagePath,
-    isCover: cover
-  })
-
-  return { photoId: photo.id, storagePath: uploaded.storagePath }
+  try {
+    const photo = await prisma.propertyPhoto.create({
+      data: {
+        propertyId,
+        storagePath: uploaded.storagePath,
+        contentType: uploaded.contentType,
+        isCover: cover
+      }
+    })
+    console.log('Photo created:', photo)
+    return { photoId: photo.id, storagePath: uploaded.storagePath }
+  } catch (err: any) {
+    console.error('Prisma error creating propertyPhoto:', err)
+    throw createError({ statusCode: 500, message: 'Failed to save property photo' })
+  }
 })

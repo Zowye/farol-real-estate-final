@@ -18,12 +18,12 @@ RUN npx prisma generate
 
 # Variáveis pra Nuxt SSR
 ENV NUXT_TELEMETRY_DISABLED=1
+ENV NITRO_PORT=8080
 ENV NITRO_HOST=0.0.0.0
-ENV NITRO_PORT=3000
 
 # Adiciona script de inicialização
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 3000
+EXPOSE 8080
 CMD ["docker-entrypoint.sh"]

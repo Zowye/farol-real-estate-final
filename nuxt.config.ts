@@ -4,18 +4,26 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: ['vuetify-nuxt-module'],
+
+  // 🚀 Adiciona isso:
+  nitro: {
+    preset: 'node-server',
+  },
+
+  devServer: {
+    port: process.env.PORT ? Number(process.env.PORT) : 8080,
+    host: '0.0.0.0',
+  },
+
   vite: {
     server: {
-      // HMR no host/porta mapeados
       hmr: { protocol: 'ws', host: 'localhost', port: 24678 },
-      // Watch por polling (Windows + Docker)
       watch: { usePolling: true, interval: 300 }
     }
   },
+
   runtimeConfig: {
-    // Private keys (server-side)
     GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
-    // Public keys (also exposed to client)
     public: {
       GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY
     }

@@ -31,25 +31,26 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+      - name: Create Repository if not exists
+        run: |
+          gcloud artifacts repositories create real-estate \
+            --repository-format=docker \
+            --location=us-central1 \
+            --description="Docker repository for real estate app" \
+            --quiet || echo "Repository already exists"
+
+      - name: Setup Docker
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
       - name: Build & Push Docker image
         run: |
           IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate/real-estate-bff:${{ github.sha }}"
-          # Build silencioso com verificação de erro
-          if ! gcloud builds submit --tag $IMAGE . --quiet 2>/dev/null; then
-            echo "ERRO: Falha no build da imagem Docker"
-            exit 1
-          fi
+          # Build da imagem Docker
+          docker build -t $IMAGE .
+          # Push da imagem para o registry
+          docker push $IMAGE
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
-
-      - name: Verify image was built
-        run: |
-          # Verificação mais simples e direta
-          if gcloud container images describe $IMAGE > /dev/null 2>&1; then
-            echo "✓ Imagem verificada com sucesso"
-          else
-            echo "ERRO: Imagem não encontrada no registro"
-            exit 1
-          fi
 
       - name: Deploy to Cloud Run
         run: |
@@ -59,17 +60,3 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --quiet
-
-      - name: Verify deployment
-        run: |
-          # Verificação simplificada do deploy
-          URL=$(gcloud run services describe ${{ secrets.CLOUD_RUN_SERVICE }} \
-            --region ${{ secrets.GCP_REGION }} \
-            --format="value(status.url)" 2>/dev/null || true)
-          
-          if [ -n "$URL" ]; then
-            echo "✓ Deploy realizado com sucesso: $URL"
-          else
-            echo "ERRO: Falha ao verificar o deploy"
-            exit 1
-          fi

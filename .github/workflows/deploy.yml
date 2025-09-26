@@ -15,10 +15,10 @@ jobs:
       - name: Debug secrets
         run: |
           if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
-            echo "ERRO: GCP_SA_KEY não está definido"
+            echo "❌ ERRO: GCP_SA_KEY não está definido"
             exit 1
           else
-            echo "GCP_SA_KEY está disponível (valor oculto por segurança)"
+            echo "✅ GCP_SA_KEY está disponível (valor oculto por segurança)"
           fi
 
       - name: Authenticate to Google Cloud
@@ -30,33 +30,32 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-
-      - name: Create Repository if not exists
-        run: |
-          gcloud artifacts repositories create real-estate \
-            --repository-format=docker \
-            --location=us-central1 \
-            --description="Docker repository for real estate app" \
-            --quiet || echo "Repository already exists"
-
-      - name: Setup Docker
-        run: |
-          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+          version: "latest"
 
       - name: Build & Push Docker image
         run: |
           IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate/real-estate-bff:${{ github.sha }}"
-          # Build da imagem Docker
-          docker build -t $IMAGE .
-          # Push da imagem para o registry
-          docker push $IMAGE
+          echo "🔨 Iniciando build da imagem: $IMAGE"
+          if ! gcloud builds submit --tag $IMAGE . --quiet; then
+            echo "⚠️ Aviso: erro de stream de logs (provável), mas o build pode ter continuado no GCP"
+          fi
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
+      - name: Verify image was built
+        run: |
+          echo "🔍 Verificando se a imagem foi criada no Artifact Registry..."
+          gcloud artifacts docker images list us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate \
+            --filter="tags:${{ github.sha }}" \
+            --format="value(name)" | grep real-estate-bff || (echo "❌ ERRO: imagem não encontrada" && exit 1)
+          echo "✅ Imagem encontrada no Artifact Registry"
 
       - name: Deploy to Cloud Run
         run: |
+          echo "🚀 Fazendo deploy para Cloud Run..."
           gcloud run deploy ${{ secrets.CLOUD_RUN_SERVICE }} \
             --image $IMAGE \
             --region ${{ secrets.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
             --quiet
+          echo "✅ Deploy concluído com sucesso"

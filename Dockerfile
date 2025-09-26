@@ -16,6 +16,10 @@ COPY . .
 # Gera Prisma Client (garante que exista no container)
 RUN npx prisma generate
 
+# Build de produção Nuxt (SSR/Nitro)
+ENV NODE_ENV=production
+RUN npm run build
+
 # Variáveis pra Nuxt SSR
 ENV NUXT_TELEMETRY_DISABLED=1
 ENV NITRO_PORT=8080

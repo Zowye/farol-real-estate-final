@@ -2,7 +2,7 @@ name: CI/CD to Cloud Run
 
 on:
   push:
-    branches: ["main"]   # ou o branch que quiser usar para deploy
+    branches: ["main"]
 
 jobs:
   build-deploy:
@@ -12,16 +12,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-
-
       - name: Debug secrets
         run: |
-            if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
-            echo "ERRRRROOO: GCP_SA_KEY não esta definido"
+          if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
+            echo "ERRO: GCP_SA_KEY não está definido"
             exit 1
-            else
-            echo "GCP_SA_KEY is available but hidden for security reasons"
-            fi
+          else
+            echo "GCP_SA_KEY está disponível (valor oculto por segurança)"
+          fi
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -31,15 +29,23 @@ jobs:
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          export_default_credentials: true
 
       - name: Build & Push Docker image
         run: |
-            IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate/real-estate-bff:${{ github.sha }}"
-            gcloud builds submit --tag $IMAGE . --quiet --no-user-output-enabled
-            echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+          IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate/real-estate-bff:${{ github.sha }}"
+          # Usando timeout e redirecionamento para suprimir logs
+          timeout 600 gcloud builds submit --tag $IMAGE . --quiet > /dev/null 2>&1 || true
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+
+      - name: Verify image was built
+        run: |
+          # Verifica se a imagem foi criada com sucesso
+          gcloud artifacts docker images list us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate --filter="tags:${{ github.sha }}" --format="value(name)" | grep real-estate-bff
+          if [ $? -ne 0 ]; then
+            echo "ERRO: Falha ao construir a imagem Docker"
+            exit 1
+          fi
 
       - name: Deploy to Cloud Run
         run: |
@@ -47,4 +53,13 @@ jobs:
             --image $IMAGE \
             --region ${{ secrets.GCP_REGION }} \
             --platform managed \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --quiet > /dev/null 2>&1
+
+      - name: Verify deployment
+        run: |
+          # Verifica se o deploy foi bem-sucedido
+          gcloud run services describe ${{ secrets.CLOUD_RUN_SERVICE }} \
+            --region ${{ secrets.GCP_REGION }} \
+            --format="value(status.url)" > /dev/null 2>&1
+          echo "Deploy realizado com sucesso!"

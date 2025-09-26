@@ -1,0 +1,138 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContractType {
+  RENT
+  SALE
+}
+
+model PropertyType {
+  id         Int     @id @default(autoincrement())
+  code       String     @unique
+  label      String
+  properties Property[]
+
+  @@map("property_type")
+}
+
+model AmenityType {
+  id         Int            @id @default(autoincrement())
+  code       String            @unique
+  label      String
+  category   String?
+  is_active  Boolean           @default(true)
+  properties PropertyAmenity[]
+
+  @@map("amenity_type")
+}
+
+model RoomType {
+  id    Int @id @default(autoincrement())
+  code  String @unique
+  label String
+  rooms Room[]
+
+  @@map("room_type")
+}
+
+model Property {
+  id             Int       @id @default(autoincrement())
+  name           String
+  description    String?
+  propertyType   PropertyType @relation(fields: [propertyTypeId], references: [id])
+  propertyTypeId Int       @map("property_type_id")
+  contract       ContractType
+  price          Decimal      @db.Decimal(12, 2)
+  roomsCount     Int          @default(0) @map("rooms_count")
+  bathrooms      Int          @default(0)
+  garages        Int          @default(0)
+
+  // Address
+  street       String?
+  streetNumber String? @map("street_number")
+  neighborhood String?
+  city         String
+  state        String
+  country      String
+  postalCode   String? @map("postal_code")
+
+  // Geolocation
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
+  placeId   String?  @map("place_id") // Google Places ID
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  // Relations
+  amenities PropertyAmenity[]
+  rooms     Room[]
+  photos    PropertyPhoto[]
+
+  @@map("property")
+}
+
+model PropertyAmenity {
+  property      Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId    Int      @map("property_id")
+  amenityType   AmenityType @relation(fields: [amenityTypeId], references: [id])
+  amenityTypeId Int      @map("amenity_type_id")
+  note          String?
+
+  @@id([propertyId, amenityTypeId])
+  @@map("property_amenity")
+}
+
+model Room {
+  id        Int      @id @default(autoincrement())
+  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  Int      @map("property_id")
+  roomType    RoomType    @relation(fields: [roomTypeId], references: [id])
+  roomTypeId  Int      @map("room_type_id")
+  name        String?
+  description String?
+  areaM2      Decimal?    @map("area_m2") @db.Decimal(8, 2)
+  floorNumber Int?        @map("floor_number")
+  position    Int         @default(0)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  photos      RoomPhoto[]
+
+  @@map("room")
+}
+
+model PropertyPhoto {
+  id          String   @id @default(uuid())
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId  Int   @map("property_id")
+  caption     String?
+  position    Int      @default(0)
+  isCover     Boolean  @default(false) @map("is_cover")
+  createdAt   DateTime @default(now()) @map("created_at")
+  // Storage path in GCP bucket
+  storagePath String   @map("storage_path") // required!
+  contentType String?  @map("content_type")
+
+  @@map("property_photo")
+}
+
+model RoomPhoto {
+  id          String   @id @default(uuid())
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId      Int   @map("room_id")
+  caption     String?
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  // Storage path in GCP bucket
+  storagePath String @map("storage_path")
+  contentType String?  @map("content_type")
+
+  @@map("room_photo")
+}

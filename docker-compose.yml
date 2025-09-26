@@ -1,0 +1,51 @@
+version: "3.9"
+services:
+  # App Nuxt 3 em modo dev (veja Dockerfile.dev)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"   # Nuxt dev
+      - "24678:24678" # Vite HMR
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - prisma_client:/app/node_modules/.prisma
+    environment:
+      - NUXT_TELEMETRY_DISABLED=1
+      - NITRO_HOST=0.0.0.0
+      - NITRO_PORT=3000
+      - CHOKIDAR_USEPOLLING=true   # força watcher por polling
+      - WATCHPACK_POLLING=true     # idem (algumas libs usam watchpack)
+      # GCP configs
+      - GOOGLE_CLOUD_PROJECT=real-estate-infra
+      - GOOGLE_CLOUD_BUCKET=dev-farol-properties-media
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/real-estate-infra-root-f82b09100c0d.json
+    command: sh -c "npx prisma generate && npm run dev"
+    env_file:
+      - .env
+
+  # Banco Postgres
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: farol_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d farol_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  node_modules: {}
+  pgdata: {}
+  prisma_client: {}

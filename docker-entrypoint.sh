@@ -1,17 +1,21 @@
 #!/bin/sh
 set -e
 
-# Garante que DATABASE_URL existe
+# Porta/host para Cloud Run (PORT é injetada pelo Cloud Run)
+export NITRO_HOST=0.0.0.0
+export NITRO_PORT="${PORT:-8080}"
+
+# Checagem DB
 if [ -z "$DATABASE_URL" ]; then
   echo "ERROR: DATABASE_URL is not set"
   exit 1
 fi
 
-echo "==> Applying Prisma migrations (deploy)..."
+echo "==> Prisma migrate deploy"
 npx prisma migrate deploy
 
-echo "==> Running seed script (if exists)..."
-npm run seed || echo "Seed script not configured or skipped."
+echo "==> Prisma seed (idempotent)"
+npx prisma db seed || echo "Seed script not configured or skipped."
 
-echo "==> Starting Nuxt (SSR)"
+echo "==> Start Nuxt (SSR) on $NITRO_HOST:$NITRO_PORT"
 npm run start

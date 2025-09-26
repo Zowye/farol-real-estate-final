@@ -38,7 +38,7 @@ jobs:
       - name: Build & Push Docker image
         run: |
             IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate/real-estate-bff:${{ github.sha }}"
-            gcloud builds submit --tag $IMAGE . --async
+            gcloud builds submit --tag $IMAGE . --no-stream-logs
             echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
       - name: Deploy to Cloud Run

@@ -5,16 +5,6 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('Starting seed...')
 
-  // 1) Limpar dados existentes (opcional - cuidado em produção)
-  await prisma.roomPhoto.deleteMany()
-  await prisma.propertyPhoto.deleteMany()
-  await prisma.room.deleteMany()
-  await prisma.propertyAmenity.deleteMany()
-  await prisma.property.deleteMany()
-  await prisma.propertyType.deleteMany()
-  await prisma.amenityType.deleteMany()
-  await prisma.roomType.deleteMany()
-
   // 2) Criar tipos base
   await prisma.propertyType.createMany({
     data: [

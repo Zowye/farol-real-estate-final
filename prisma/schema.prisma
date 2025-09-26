@@ -109,7 +109,7 @@ model Room {
 }
 
 model PropertyPhoto {
-  id          String   @id @default(uuid())
+  id          Int      @id @default(autoincrement())
   property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   propertyId  Int   @map("property_id")
   caption     String?
@@ -124,7 +124,7 @@ model PropertyPhoto {
 }
 
 model RoomPhoto {
-  id          String   @id @default(uuid())
+  id          Int      @id @default(autoincrement())
   room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   roomId      Int   @map("room_id")
   caption     String?

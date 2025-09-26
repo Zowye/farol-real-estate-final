@@ -2,7 +2,7 @@ name: CI/CD to Cloud Run
 
 on:
   push:
-    branches: ["main"]   # ou o branch que quiser usar para deploy
+    branches: ["main"]
 
 jobs:
   build-deploy:
@@ -12,16 +12,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-
-
       - name: Debug secrets
         run: |
-            if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
+          if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
             echo "ERRRRROOO: GCP_SA_KEY não esta definido"
             exit 1
-            else
+          else
             echo "GCP_SA_KEY is available but hidden for security reasons"
-            fi
+          fi
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
@@ -31,15 +29,14 @@ jobs:
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
           project_id: ${{ secrets.GCP_PROJECT_ID }}
-          export_default_credentials: true
+          version: "latest"
 
       - name: Build & Push Docker image
         run: |
-            IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate/real-estate-bff:${{ github.sha }}"
-            gcloud builds submit --tag $IMAGE . --logging=CLOUD_LOGGING_ONLY
-            echo "IMAGE=$IMAGE" >> $GITHUB_ENV
+          IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate/real-estate-bff:${{ github.sha }}"
+          gcloud builds submit --tag $IMAGE . --logging=CLOUD_LOGGING_ONLY
+          echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
       - name: Deploy to Cloud Run
         run: |

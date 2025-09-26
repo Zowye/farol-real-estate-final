@@ -34,16 +34,20 @@ jobs:
       - name: Build & Push Docker image
         run: |
           IMAGE="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate/real-estate-bff:${{ github.sha }}"
-          # Usando timeout e redirecionamento para suprimir logs
-          timeout 600 gcloud builds submit --tag $IMAGE . --quiet > /dev/null 2>&1 || true
+          # Build silencioso com verificação de erro
+          if ! gcloud builds submit --tag $IMAGE . --quiet 2>/dev/null; then
+            echo "ERRO: Falha no build da imagem Docker"
+            exit 1
+          fi
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
       - name: Verify image was built
         run: |
-          # Verifica se a imagem foi criada com sucesso
-          gcloud artifacts docker images list us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/real-estate --filter="tags:${{ github.sha }}" --format="value(name)" | grep real-estate-bff
-          if [ $? -ne 0 ]; then
-            echo "ERRO: Falha ao construir a imagem Docker"
+          # Verificação mais simples e direta
+          if gcloud container images describe $IMAGE > /dev/null 2>&1; then
+            echo "✓ Imagem verificada com sucesso"
+          else
+            echo "ERRO: Imagem não encontrada no registro"
             exit 1
           fi
 
@@ -54,12 +58,18 @@ jobs:
             --region ${{ secrets.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --quiet > /dev/null 2>&1
+            --quiet
 
       - name: Verify deployment
         run: |
-          # Verifica se o deploy foi bem-sucedido
-          gcloud run services describe ${{ secrets.CLOUD_RUN_SERVICE }} \
+          # Verificação simplificada do deploy
+          URL=$(gcloud run services describe ${{ secrets.CLOUD_RUN_SERVICE }} \
             --region ${{ secrets.GCP_REGION }} \
-            --format="value(status.url)" > /dev/null 2>&1
-          echo "Deploy realizado com sucesso!"
+            --format="value(status.url)" 2>/dev/null || true)
+          
+          if [ -n "$URL" ]; then
+            echo "✓ Deploy realizado com sucesso: $URL"
+          else
+            echo "ERRO: Falha ao verificar o deploy"
+            exit 1
+          fi

@@ -51,15 +51,17 @@ export default defineEventHandler(async (event) => {
     storagePath,
     makePublic: false
   })
+
   try {
-    const photo = await prisma.propertyPhoto.create({
-      data: {
-        propertyId,
-        storagePath: uploaded.storagePath,
-        contentType: uploaded.contentType,
-        isCover: cover
-      }
-    })
+    const payload = {
+      propertyId,
+      storagePath: uploaded.storagePath,
+      isCover: cover,
+      position: 0 
+    }
+
+    console.info('Creating propertyPhoto with payload:', payload)
+    const photo = await prisma.propertyPhoto.create({ data: payload })
     console.log('Photo created:', photo)
     return { photoId: photo.id, storagePath: uploaded.storagePath }
   } catch (err: any) {

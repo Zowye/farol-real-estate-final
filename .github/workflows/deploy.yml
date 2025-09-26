@@ -12,6 +12,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+
+
+      - name: Debug secrets
+        run: |
+            if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
+            echo "ERRRRROOO: GCP_SA_KEY não esta definido"
+            exit 1
+            else
+            echo "GCP_SA_KEY is available but hidden for security reasons"
+            fi
+
+
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
         with:

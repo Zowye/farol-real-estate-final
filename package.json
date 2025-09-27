@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@google-cloud/storage": "^7.17.1",
+    "@heroicons/vue": "^2.2.0",
     "@prisma/client": "^6.16.2",
     "@vueuse/core": "^13.9.0",
     "multer": "^2.0.2",
